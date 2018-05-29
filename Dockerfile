@@ -1,23 +1,35 @@
-FROM alpine:latest
+FROM alpine:edge
 
-RUN mkdir -p /conf && \
-	mkdir -p /conf-copy && \
-	mkdir -p /data && \
-	apk add --no-cache tzdata bash aria2 darkhttpd
+MAINTAINER Danny Chan <a@b.c>
 
-RUN	apk add --no-cache git && \
-	git clone --depth 1 https://github.com/ziahamza/webui-aria2 /aria2-webui && \
-	apk del git
+RUN apk update && \
+	apk add --no-cache --update bash && \
+	mkdir -p /aria2/conf && \
+	mkdir -p /aria2/conf-copy && \
+	mkdir -p /aria2/data && \
+	apk add --no-cache --update aria2 && \
+	apk add git && \
+	git clone https://github.com/ziahamza/webui-aria2 /aria2/aria2-webui && \
+    rm /aria2/aria2-webui/.git* -rf && \
+    apk del git && \
+	apk add --update darkhttpd
 
-ADD files/start.sh /conf-copy/start.sh
-ADD files/aria2.conf /conf-copy/aria2.conf
+ENV PROJECT_DIR /aria2/conf-copy
+WORKDIR $PROJECT_DIR
 
-RUN chmod +x /conf-copy/start.sh
+COPY files/docker-entrypoint.sh $PROJECT_DIR
+COPY files/aria2.conf $PROJECT_DIR
+COPY files/on-complete.sh $PROJECT_DIR
 
-WORKDIR /
+RUN chmod +x docker-entrypoint.sh
 
-VOLUME ["/data"]
-VOLUME ["/conf"]
+ENV SECRET SECRET
+
+VOLUME ["/aria2/data"]
+VOLUME ["/aria2/conf"]
 
 EXPOSE 6800
 EXPOSE 80
+EXPOSE 8080
+
+CMD ["docker-entrypoint.sh"]
