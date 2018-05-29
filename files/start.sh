@@ -1,23 +1,20 @@
 #!/bin/sh
-set -e
+rootPath=/aria2
 
-PUID=${PUID:=0}
-PGID=${PGID:=0}
-
-if [ ! -f /conf/aria2.conf ]; then
-	cp /conf-copy/aria2.conf /conf/aria2.conf
-	chown $PUID:$PGID /conf/aria2.conf
+if [ ! -f $rootPath/conf/aria2.conf ]; then
+	cp $rootPath/conf-copy/aria2.conf $rootPath/conf/aria2.conf
 	if [ $SECRET ]; then
-		echo "rpc-secret=${SECRET}" >> /conf/aria2.conf
+		echo "rpc-secret=${SECRET}" >> $rootPath/conf/aria2.conf
 	fi
 fi
+if [ ! -f $rootPath/conf/on-complete.sh ]; then
+	cp $rootPath/conf-copy/on-complete.sh $rootPath/conf/on-complete.sh
+fi
 
-touch /conf/aria2.session
-chown $PUID:$PGID /conf/aria2.session
+chmod +x $rootPath/conf/on-complete.sh
+touch $rootPath/conf/aria2.session
 
-touch /logs.txt
-chown $PUID:$PGID /logs.txt
+darkhttpd $rootPath/aria2-webui --port 80 &
+darkhttpd $rootPath/data --port 8080 &
 
-darkhttpd /aria2-webui --port 80 &
-
-exec s6-setuidgid $PUID:$PGID aria2c --conf-path=/conf/aria2.conf --log=/logs.txt
+aria2c --conf-path=$rootPath/conf/aria2.conf
